@@ -24,7 +24,7 @@ async fn main() {
         .await
         .expect("Fail to initialize database connection");
     let schema =
-        seaography_sqlite_example::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT)
+        sushi_api::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT)
             .unwrap();
     let app = Route::new().at(
         &*ENDPOINT,
