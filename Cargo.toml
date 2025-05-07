@@ -4,3 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+sea-orm = { version = "1.1", features = ["sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
+migration = { path = "migration" }
+
+[dev-dependencies]
+tokio = { version = "1.29", features = ["macros", "rt-multi-thread"] }
+sea-query = "0.30"
+sea-orm-migration = "1.1"
+
+[workspace]
+members = ["migration"]
