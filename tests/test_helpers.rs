@@ -1,7 +1,7 @@
 use sea_orm::{Database, DatabaseConnection, ConnectOptions};
 use sea_orm_migration::MigratorTrait;
 use std::path::Path;
-use std::fs;
+use tokio::fs;
 use std::time::Duration;
 use uuid::Uuid;
 
@@ -15,7 +15,12 @@ pub async fn new_test_db() -> DatabaseConnection {
     let filename = format!("test_sushi_{}.db", unique_id);
     let db_path = Path::new(&filename);
     
-    // Create a clean database URL
+    // Ensure any existing file with the same name is removed
+    if db_path.exists() {
+        let _ = std::fs::remove_file(db_path);
+    }
+    
+    // Create a clean database URL with explicit mode for read-write with create
     let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
     
     // Configure connection options with shorter timeouts
@@ -42,13 +47,22 @@ pub async fn new_test_db() -> DatabaseConnection {
 
 /// Cleanup function to remove test database files
 /// Call this at the end of your test suite
-pub fn cleanup_test_dbs() {
+pub async fn cleanup_test_dbs() {
+    // Small delay to ensure database connections are properly closed
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    
     // Find and remove test database files
-    if let Ok(entries) = fs::read_dir(".") {
-        for entry in entries.flatten() {
+    if let Ok(mut entries) = fs::read_dir(".").await {
+        while let Ok(Some(entry)) = entries.next_entry().await {
             if let Ok(file_name) = entry.file_name().into_string() {
                 if file_name.starts_with("test_sushi_") && file_name.ends_with(".db") {
-                    let _ = fs::remove_file(entry.path());
+                    // Try multiple times in case of file locking issues
+                    for _ in 0..3 {
+                        if fs::remove_file(&entry.path()).await.is_ok() {
+                            break;
+                        }
+                        tokio::time::sleep(Duration::from_millis(50)).await;
+                    }
                 }
             }
         }

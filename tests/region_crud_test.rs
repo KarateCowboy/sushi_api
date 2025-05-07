@@ -2,23 +2,8 @@ mod test_helpers;
 use sea_orm::{ActiveModelTrait, Set};
 use test_helpers::{new_test_db, cleanup_test_dbs};
 
-// Define the Region entity using sea-orm macros
-use sea_orm::entity::prelude::*;
-
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "region")]
-pub struct Model {
-    #[sea_orm(primary_key)]
-    pub id: i32,
-    pub slug: String,
-    pub katakana: String,
-    pub english: String,
-}
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}
+// Import the region model from the project
+use sushi_api::models::region::{ActiveModel, Entity, Column};
 
 #[tokio::test]
 async fn test_region_basic_query() {
@@ -45,9 +30,9 @@ async fn test_region_basic_query() {
     // For SQLite, the first ID should be 1
     assert_eq!(inserted_region.id, 1);
     
-    // Clean up - explicitly drop the database connection
-    drop(db);
-    cleanup_test_dbs();
+    // Clean up - explicitly close the database connection
+    db.close().await.expect("Failed to close database connection");
+    cleanup_test_dbs().await;
 }
 
 #[tokio::test]
@@ -91,7 +76,7 @@ async fn test_find_region_by_slug() {
         None => panic!("Region not found"),
     }
     
-    // Clean up - explicitly drop the database connection
-    drop(db);
-    cleanup_test_dbs();
+    // Clean up - explicitly close the database connection
+    db.close().await.expect("Failed to close database connection");
+    cleanup_test_dbs().await;
 }
